@@ -15,7 +15,12 @@ PPPD_PID=
 
 #/system/xbin/pppd $*
 # pppd was put into /system/bin instead of /system/xbin after SDK1.6
-/system/bin/pppd  /dev/ttyUSB0 115200 mru 1280 mtu 1280 nodetach debug dump defaultroute usepeerdns novj novjccomp noipdefault ipcp-accept-local ip    cp-accept-remote connect-delay 5000 linkname ppp0
+if ls /dev/ttyUSB0 > /dev/null 2>&1; then
+    /system/bin/pppd  /dev/ttyUSB0 115200 mru 1280 mtu 1280 nodetach debug dump defaultroute usepeerdns novj novjccomp noipdefault ipcp-accept-local ipcp-accept-remote connect-delay 5000 linkname ppp0
+else
+   /system/bin/pppd ttyACM0 921600 nodetach noauth noipdefault defaultroute usepeerdns linkname ppp0 connect "chat -v '' AT OK ATD*99***1# CONNECT" debug
+fi
+
 
 PPPD_EXIT=$?
 PPPD_PID=$!
