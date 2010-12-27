@@ -1,0 +1,26 @@
+#!/system/bin/sh
+# An unforunate wrapper script
+# so that the exit code of pppd may be retrieved
+
+
+# this is a workaround for issue #651747
+#trap "/system/bin/sleep 1;exit 0" TERM
+
+
+PPPD_PID=
+
+/system/bin/setprop "net.gprs.ppp-exit" ""
+
+/system/bin/log -t pppd "Starting pppd"
+
+#/system/xbin/pppd $*
+# pppd was put into /system/bin instead of /system/xbin after SDK1.6
+/system/bin/pppd  /dev/ttyUSB0 115200 mru 1280 mtu 1280 nodetach debug dump defaultroute usepeerdns novj novjccomp noipdefault ipcp-accept-local ip    cp-accept-remote connect-delay 5000 linkname ppp0
+
+PPPD_EXIT=$?
+PPPD_PID=$!
+
+/system/bin/log -t pppd "pppd exited with $PPPD_EXIT"
+
+/system/bin/setprop "net.gprs.ppp-exit" "$PPPD_EXIT"
+

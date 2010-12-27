@@ -5,6 +5,7 @@ include $(CLEAR_VARS)
 
 copy_from := \
 	etc/dbus.conf \
+	etc/init.gprs-pppd \
 	etc/hosts
 
 ifeq ($(TARGET_PRODUCT),full)

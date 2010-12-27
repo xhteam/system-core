@@ -99,7 +99,8 @@ struct {
 } control_perms[] = {
     { "dumpstate",AID_SHELL, AID_LOG },
     { "ril-daemon",AID_RADIO, AID_RADIO },
-     {NULL, 0, 0 }
+	{ "pppd_gprs", AID_RADIO, AID_RADIO },
+    {NULL, 0, 0 }
 };
 
 typedef struct {
