@@ -66,6 +66,12 @@ $(file) : $(LOCAL_PATH)/etc/ueventd.goldfish.rc | $(ACP)
 ALL_PREBUILT += $(file)
 $(INSTALLED_RAMDISK_TARGET): $(file)
 
+file := $(TARGET_ROOT_OUT)/ueventd.freescale.rc
+$(file) : $(LOCAL_PATH)/etc/ueventd.freescale.rc | $(ACP)
+	$(transform-prebuilt-to-target)
+ALL_PREBUILT += $(file)
+$(INSTALLED_RAMDISK_TARGET): $(file)
+
 # create some directories (some are mount points)
 DIRS := $(addprefix $(TARGET_ROOT_OUT)/, \
 		sbin \
