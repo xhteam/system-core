@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2010 Freescale Semiconductor, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +69,7 @@ static char hardware[32];
 static char modelno[32];
 static unsigned revision = 0;
 static char qemu[32];
+static char calibration;
 
 static struct action *cur_action = NULL;
 static struct command *cur_command = NULL;
@@ -142,6 +144,55 @@ static void publish_socket(const char *name, int fd)
 
     /* make sure we don't close-on-exec */
     fcntl(fd, F_SETFD, 0);
+}
+
+int wait_for_service(char *filename) {
+
+    struct stat s;
+    int status;
+    pid_t pid;
+
+    if (stat(filename, &s) != 0) {
+	ERROR("cannot find '%s'", filename);
+	return -1;
+    }
+
+    NOTICE("executing '%s'\n", filename);
+
+    pid = fork();
+
+    if (pid == 0) {
+
+        char tmp[32];
+        int fd, sz;
+
+        get_property_workspace(&fd, &sz);
+        sprintf(tmp, "%d,%d", dup(fd), sz);
+        add_environment("ANDROID_PROPERTY_WORKSPACE", tmp);
+	/* redirect stdio to null */
+        zap_stdio();
+
+        setpgid(0, getpid());
+	/* execute */
+	execve(filename, NULL, (char **)ENV);
+	/* exit */
+	_exit(0);
+    }
+
+    if (pid < 0) {
+	ERROR("failed to fork and start '%s'\n", filename);
+	return -1;
+    }
+
+    if (-1 == waitpid(pid, &status, WCONTINUED | WUNTRACED)) {
+	ERROR("Wait for child error\n");
+	return -1;
+    }
+
+    if (WIFEXITED(status)) {
+	NOTICE("executed '%s' done\n", filename);
+    }
+    return 0;
 }
 
 void service_start(struct service *svc, const char *dynamic_args)
@@ -425,7 +476,11 @@ static void import_kernel_nv(char *name, int in_qemu)
 {
     char *value = strchr(name, '=');
 
-    if (value == 0) return;
+    if (value == 0) {
+	if (!strcmp(name, "calibration"))
+	    calibration = 1;
+	return;
+    }
     *value++ = 0;
     if (*name == 0) return;
 
