@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
- * Copyright (C) 2010 Freescale Semiconductor, Inc.
+ *
+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -647,6 +648,11 @@ static int set_init_properties_action(int nargs, char **args)
         property_set("ro.factorytest", "2");
     else
         property_set("ro.factorytest", "0");
+
+    if (calibration)
+        property_set("ro.calibration", "1");
+    else
+        property_set("ro.calibration", "0");
 
     property_set("ro.serialno", serialno[0] ? serialno : "");
     property_set("ro.bootmode", bootmode[0] ? bootmode : "unknown");
