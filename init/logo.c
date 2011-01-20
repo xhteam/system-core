@@ -84,9 +84,9 @@ static void fb_close(struct FB *fb)
 static void fb_update(struct FB *fb)
 {
     fb->vi.yoffset = 1;
-    ioctl(fb->fd, FBIOPUT_VSCREENINFO, &fb->vi);
+    ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->vi);
     fb->vi.yoffset = 0;
-    ioctl(fb->fd, FBIOPUT_VSCREENINFO, &fb->vi);
+    ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->vi);
 }
 
 static int vt_set_mode(int graphics)
