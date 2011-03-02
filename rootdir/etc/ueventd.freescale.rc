@@ -12,3 +12,9 @@
 /dev/mxs_viim             0660   system     media
 /dev/fsl_cache            0666   system     graphics
 /dev/gsl_kmod             0666   system     graphics
+
+# sysfs properties
+/sys/devices/virtual/input/input*   name        0660  root   input
+/sys/devices/virtual/input/input*   max         0660  root   input
+/sys/devices/virtual/input/input*   min         0660  root   input
+/sys/devices/virtual/input/input*   poll        0666  root   input
