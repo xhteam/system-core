@@ -8,13 +8,23 @@
 /dev/video1               0660   system     camera
 /dev/video16              0660   system     graphics
 /dev/mxc_ipu              0666   system     graphics
-/dev/mxc_iim              0660   system     media
-/dev/mxs_viim             0660   system     media
+/dev/mxc_iim              0664   system     media
+/dev/mxs_viim             0664   system     media
 /dev/fsl_cache            0666   system     graphics
 /dev/gsl_kmod             0666   system     graphics
+/dev/mxc_vpu              0666   system     media
 
 # sysfs properties
 /sys/devices/virtual/input/input*   name        0660  root   input
 /sys/devices/virtual/input/input*   max         0660  root   input
 /sys/devices/virtual/input/input*   min         0660  root   input
-/sys/devices/virtual/input/input*   poll        0666  root   input
+/sys/devices/virtual/input/input*   poll        0660  root   input
+
+/sys/devices/platform/mxsdhci.2/mmc_host/mmc0/mmc0:000* boot_bus_config 0660 root root
+/sys/devices/platform/mxsdhci.2/mmc_host/mmc0/mmc0:000* boot_config 0660 root root
+/sys/devices/platform/imx-i2c.2/i2c-2/2-0044 mode 0660 system system
+/sys/devices/platform/imx-i2c.2/i2c-2/2-0044 lux 0660 system system
+/sys/devices/platform/imx-i2c.2/i2c-2/2-0044 int_lt_lux 0660 system system
+/sys/devices/platform/imx-i2c.2/i2c-2/2-0044 int_ht_lux 0660 system system
+/sys/devices/platform/mxc_sdc_fb.0/graphics/fb*	fsl_disp_property 0660 system graphics
+/sys/devices/platform/mxc_sdc_fb.1/graphics/fb*	fsl_disp_property 0660 system graphics
