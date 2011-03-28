@@ -191,6 +191,9 @@ static struct fs_path_config android_files[] = {
     { 00444, AID_RADIO,     AID_AUDIO,     "system/etc/AudioPara4.csv" },
     { 00555, AID_ROOT,      AID_ROOT,      "system/etc/ppp/*" },
     { 00555, AID_ROOT,      AID_ROOT,      "system/etc/rc.*" },
+	{ 00750, AID_ROOT,      AID_SHELL,     "recovery/init*" },
+	{ 00755, AID_ROOT,      AID_SHELL,     "recovery/system/bin/*" },
+	{ 00755, AID_ROOT,      AID_SHELL,     "recovery/sbin/*" },
     { 00644, AID_SYSTEM,    AID_SYSTEM,    "data/app/*" },
     { 00644, AID_MEDIA_RW,  AID_MEDIA_RW,  "data/media/*" },
     { 00644, AID_SYSTEM,    AID_SYSTEM,    "data/app-private/*" },
@@ -248,8 +251,8 @@ static inline void fs_config(const char *path, int dir,
     *mode = (*mode & (~07777)) | pc->mode;
     
 #if 0
-    fprintf(stderr,"< '%s' '%s' %d %d %o >\n", 
-            path, pc->prefix ? pc->prefix : "", *uid, *gid, *mode);
+	printf("< '%s' '%s' %d %d %o >\n", path,
+      pc->prefix ? pc->prefix : "", *uid, *gid, *mode);
 #endif
 }
 #endif
