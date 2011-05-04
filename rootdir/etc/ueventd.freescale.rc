@@ -14,6 +14,11 @@
 /dev/gsl_kmod             0666   system     graphics
 /dev/mxc_vpu              0666   system     media
 /dev/uinput               0666   system     input
+/dev/ttymxc1              0775   system     gps
+/dev/ttya0                0775   system     gps
+/dev/ptya0                0775   system     gps
+/dev/ttya1                0775   system     gps
+/dev/ptya1                0775   system     gps
 
 # sysfs properties
 /sys/devices/virtual/input/input*   name        0660  root   input

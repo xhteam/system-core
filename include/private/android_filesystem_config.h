@@ -189,6 +189,7 @@ static struct fs_path_config android_files[] = {
     { 00444, AID_NET_BT,    AID_NET_BT,    "system/etc/bluetooth/blacklist.conf" },
     { 00640, AID_SYSTEM,    AID_SYSTEM,    "system/etc/bluetooth/auto_pairing.conf" },
     { 00444, AID_RADIO,     AID_AUDIO,     "system/etc/AudioPara4.csv" },
+	{ 00550, AID_GPS,       AID_GPS,       "system/etc/gpsreset.sh" },
 	{ 00440, AID_SYSTEM,    AID_INPUT,     "system/etc/magd.conf" },
     { 00555, AID_ROOT,      AID_ROOT,      "system/etc/ppp/*" },
     { 00555, AID_ROOT,      AID_ROOT,      "system/etc/rc.*" },
