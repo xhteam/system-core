@@ -6,6 +6,7 @@ include $(CLEAR_VARS)
 copy_from := \
 	etc/dbus.conf \
 	etc/init.gprs-pppd \
+	etc/magd.conf \
 	etc/hosts
 
 ifeq ($(TARGET_PRODUCT),full)
