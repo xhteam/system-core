@@ -32,7 +32,7 @@
 /sys/devices/platform/imx-i2c.2/i2c-2/2-0044 lux 0660 system system
 /sys/devices/platform/imx-i2c.2/i2c-2/2-0044 int_lt_lux 0660 system system
 /sys/devices/platform/imx-i2c.2/i2c-2/2-0044 int_ht_lux 0660 system system
-/sys/devices/platform/imx-i2c.1/i2c-1/1-000e enable     0666 system input
+/sys/devices/platform/imx-i2c.1/i2c-1/1-000e enable     0660 system input
 /sys/devices/platform/mxc_sdc_fb.0/graphics/fb*	fsl_disp_property 0660 system graphics
 /sys/devices/platform/mxc_sdc_fb.1/graphics/fb*	fsl_disp_property 0660 system graphics
 /sys/devices/platform/mxc_sdc_fb.0/graphics/fb*	mode 0660 system graphics
