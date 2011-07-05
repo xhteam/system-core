@@ -5,8 +5,6 @@ include $(CLEAR_VARS)
 
 copy_from := \
 	etc/dbus.conf \
-	etc/init.gprs-pppd \
-	etc/magd.conf \
 	etc/hosts
 
 ifeq ($(TARGET_PRODUCT),full)
@@ -63,12 +61,6 @@ $(INSTALLED_RAMDISK_TARGET): $(file)
 
 file := $(TARGET_ROOT_OUT)/ueventd.goldfish.rc
 $(file) : $(LOCAL_PATH)/etc/ueventd.goldfish.rc | $(ACP)
-	$(transform-prebuilt-to-target)
-ALL_PREBUILT += $(file)
-$(INSTALLED_RAMDISK_TARGET): $(file)
-
-file := $(TARGET_ROOT_OUT)/ueventd.freescale.rc
-$(file) : $(LOCAL_PATH)/etc/ueventd.freescale.rc | $(ACP)
 	$(transform-prebuilt-to-target)
 ALL_PREBUILT += $(file)
 $(INSTALLED_RAMDISK_TARGET): $(file)
