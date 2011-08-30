@@ -29,7 +29,7 @@
 
 #include <linux/usbdevice_fs.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 20)
+#if ADB_HOST_ON_TARGET==0
 #include <linux/usb/ch9.h>
 #else
 #include <linux/usb_ch9.h>
