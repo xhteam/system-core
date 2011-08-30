@@ -26,6 +26,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libusbhost
 LOCAL_SRC_FILES := usbhost.c
 
+LOCAL_CFLAGS := -DBUILD_HOST
+
 include $(BUILD_HOST_STATIC_LIBRARY)
 
 endif

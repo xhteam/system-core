@@ -24,7 +24,9 @@ extern "C" {
 #include <stdint.h>
 
 #include <linux/version.h>
-#ifndef USE_LIBLOG
+#if defined(BUILD_HOST)
+#include <linux/usb/ch9.h>
+#elif defined(MTP_HOST) && !defined(MTP_DEVICE)
 #include <linux/usb/ch9.h>
 #else
 #include <linux/usb_ch9.h>
