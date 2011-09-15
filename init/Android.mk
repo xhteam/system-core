@@ -35,13 +35,15 @@ include $(BUILD_EXECUTABLE)
 # Make a symlink from /sbin/ueventd to /init
 SYMLINKS := $(TARGET_ROOT_OUT)/sbin/ueventd
 $(SYMLINKS): INIT_BINARY := $(LOCAL_MODULE)
-$(SYMLINKS): $(LOCAL_INSTALLED_MODULE) $(LOCAL_PATH)/Android.mk
+$(SYMLINKS): $(LOCAL_INSTALLED_MODULE) $(LOCAL_PATH)/Android.mk ALWAYSMAKE
 	@echo "Symlink: $@ -> ../$(INIT_BINARY)"
 	@mkdir -p $(dir $@)
 	@rm -rf $@
 	$(hide) ln -sf ../$(INIT_BINARY) $@
 
 ALL_DEFAULT_INSTALLED_MODULES += $(SYMLINKS)
+
+ALWAYSMAKE:
 
 # We need this so that the installed files could be picked up based on the
 # local module name
