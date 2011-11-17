@@ -123,6 +123,9 @@
 #define VENDOR_ID_INQ_MOBILE    0x2314
 // Sony's USB Vendor ID
 #define VENDOR_ID_SONY          0x054C
+// Freescale's USB Vendor ID
+#define VENDOR_ID_FREESCALE     0x15A2
+
 
 /** built-in vendor list */
 int builtInVendorIds[] = {
@@ -170,6 +173,7 @@ int builtInVendorIds[] = {
     VENDOR_ID_QUANTA,
     VENDOR_ID_INQ_MOBILE,
     VENDOR_ID_SONY,
+    VENDOR_ID_FREESCALE,
 };
 
 #define BUILT_IN_VENDOR_COUNT    (sizeof(builtInVendorIds)/sizeof(builtInVendorIds[0]))
