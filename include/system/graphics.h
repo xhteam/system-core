@@ -89,12 +89,18 @@ enum {
 
 
     /* Legacy formats (deprecated), used by ImageFormat.java */
-    HAL_PIXEL_FORMAT_YCbCr_422_SP       = 0x10, // NV16
-    HAL_PIXEL_FORMAT_YCrCb_420_SP       = 0x11, // NV21
-    HAL_PIXEL_FORMAT_YCbCr_420_SP       = 0x12, // NV16
-    HAL_PIXEL_FORMAT_YCbCr_420_I        = 0x13, // NV16
-    HAL_PIXEL_FORMAT_YCbCr_422_I        = 0x14, // YUY2
-
+    HAL_PIXEL_FORMAT_YCbCr_422_SP = 0x10,
+    HAL_PIXEL_FORMAT_YCrCb_420_SP = 0x11,
+    HAL_PIXEL_FORMAT_YCbCr_422_P  = 0x12,
+    HAL_PIXEL_FORMAT_YCbCr_420_P  = 0x13,
+    HAL_PIXEL_FORMAT_YCbCr_422_I  = 0x14,
+    HAL_PIXEL_FORMAT_YCbCr_420_I  = 0x15,
+    HAL_PIXEL_FORMAT_CbYCrY_422_I = 0x16,
+    HAL_PIXEL_FORMAT_CbYCrY_420_I = 0x17,
+    HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED = 0x20,
+    HAL_PIXEL_FORMAT_YCbCr_420_SP       = 0x21,
+    HAL_PIXEL_FORMAT_YCrCb_420_SP_TILED = 0x22,
+    HAL_PIXEL_FORMAT_YCrCb_422_SP       = 0x23,
 };
 
 
