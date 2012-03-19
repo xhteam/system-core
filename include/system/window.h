@@ -213,6 +213,7 @@ enum {
     NATIVE_WINDOW_TRANSFORM_HINT = 8,
     NATIVE_WINDOW_GET_BUFFERS_COUNT = 100,
     NATIVE_WINDOW_GET_BUFFER = 101,
+    NATIVE_WINDOW_GET_FRAME_LOST = 102,
 };
 
 /* valid operations for the (*perform)() hook */
