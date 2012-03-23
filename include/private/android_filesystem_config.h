@@ -183,7 +183,7 @@ static struct fs_path_config android_files[] = {
     { 00550, AID_DHCP,      AID_SHELL,     "system/etc/dhcpcd/dhcpcd-run-hooks" },
     { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/dbus.conf" },
     { 00440, AID_WIFI,	    AID_WIFI,	   "system/etc/wifi/wpa_supplicant.conf"},
-    { 0775, AID_ROOT,       AID_WIFI,      "system/bin/wlan_tool"},
+    { 00550, AID_ROOT,      AID_WIFI,      "system/etc/check_wifi_mac.sh"},
     { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/main.conf" },
     { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/input.conf" },
     { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/audio.conf" },
