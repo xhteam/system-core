@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2012 Freescale Semiconductor, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -319,6 +320,7 @@ typedef enum {
     AUDIO_DEVICE_IN_AUX_DIGITAL           = 0x200000,
     AUDIO_DEVICE_IN_VOICE_CALL            = 0x400000,
     AUDIO_DEVICE_IN_BACK_MIC              = 0x800000,
+    AUDIO_DEVICE_IN_ANLG_DOCK_MIC         = 0x1000000,
     AUDIO_DEVICE_IN_DEFAULT               = 0x80000000,
 
     AUDIO_DEVICE_IN_ALL     = (AUDIO_DEVICE_IN_COMMUNICATION |
@@ -329,6 +331,7 @@ typedef enum {
                                AUDIO_DEVICE_IN_AUX_DIGITAL |
                                AUDIO_DEVICE_IN_VOICE_CALL |
                                AUDIO_DEVICE_IN_BACK_MIC |
+                               AUDIO_DEVICE_IN_ANLG_DOCK_MIC |
                                AUDIO_DEVICE_IN_DEFAULT),
     AUDIO_DEVICE_IN_ALL_SCO = AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET,
 } audio_devices_t;
