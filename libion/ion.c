@@ -4,6 +4,7 @@
  * Memory Allocator functions for ion
  *
  *   Copyright 2011 Google, Inc
+ *   Copyright (C) 2012 Freescale Semiconductor, Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -54,14 +55,13 @@ static int ion_ioctl(int fd, int req, void *arg)
         return ret;
 }
 
-int ion_alloc(int fd, size_t len, size_t align, unsigned int heap_mask,
-	      unsigned int flags, struct ion_handle **handle)
+int ion_alloc(int fd, size_t len, size_t align, unsigned int flags,
+              struct ion_handle **handle)
 {
         int ret;
         struct ion_allocation_data data = {
                 .len = len,
                 .align = align,
-		.heap_mask = heap_mask,
                 .flags = flags,
         };
 
@@ -103,6 +103,20 @@ int ion_map(int fd, struct ion_handle *handle, size_t length, int prot,
         return ret;
 }
 
+unsigned long ion_phys(int fd, struct ion_handle *handle)
+{
+        int ret;
+        struct ion_phys_data data = {
+                .handle = handle,
+		.phys = 0,
+        };
+
+        ret = ion_ioctl(fd, ION_IOC_PHYS, &data);
+        if (ret == 0)
+            return data.phys;
+        return 0;
+}
+
 int ion_share(int fd, struct ion_handle *handle, int *share_fd)
 {
         int map_fd;
@@ -121,19 +135,6 @@ int ion_share(int fd, struct ion_handle *handle, int *share_fd)
         return ret;
 }
 
-int ion_alloc_fd(int fd, size_t len, size_t align, unsigned int heap_mask,
-		 unsigned int flags, int *handle_fd) {
-	struct ion_handle *handle;
-	int ret;
-
-	ret = ion_alloc(fd, len, align, heap_mask, flags, &handle);
-	if (ret < 0)
-		return ret;
-	ret = ion_share(fd, handle, handle_fd);
-	ion_free(fd, handle);
-	return ret;
-}
-
 int ion_import(int fd, int share_fd, struct ion_handle **handle)
 {
         struct ion_fd_data data = {
@@ -145,12 +146,4 @@ int ion_import(int fd, int share_fd, struct ion_handle **handle)
                 return ret;
         *handle = data.handle;
         return ret;
-}
-
-int ion_sync_fd(int fd, int handle_fd)
-{
-    struct ion_fd_data data = {
-        .fd = handle_fd,
-    };
-    return ion_ioctl(fd, ION_IOC_SYNC, &data);
 }
