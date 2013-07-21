@@ -109,6 +109,7 @@ struct {
     { "dumpstate",AID_SHELL, AID_LOG },
     { "ril-daemon",AID_RADIO, AID_RADIO },
     { "pppd_gprs", AID_RADIO, AID_RADIO },
+	{ "ppp_daemon", AID_RADIO, AID_RADIO },    
      {NULL, 0, 0 }
 };
 
