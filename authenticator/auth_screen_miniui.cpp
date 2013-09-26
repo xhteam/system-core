@@ -1,5 +1,7 @@
+#include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <math.h>
 #include <fcntl.h>
 #include <time.h>
@@ -7,6 +9,7 @@
 #include <signal.h>
 #include "auth_log.h"
 #include "auth_screen.h"
+#include <cutils/properties.h>
 #include "minui.h"
 
 
@@ -259,7 +262,25 @@ int auth_screen_init(void)
 //only png name supported
 int auth_screen_lock(const char* name)
 {	
-	if(!inited) auth_screen_init();
+	pid_t child,pid;
+	int status;
+	if(!inited) auth_screen_init();	
+    child = fork();
+    if (child < 0) {
+        ERROR("error: auth screen scramber: fork failed\n");
+        return 0;
+    }
+    if (child == 0) {
+        execl("/system/bin/stop", "/system/bin/stop",NULL);
+        exit(-1);
+    }
+
+    while ((pid=waitpid(-1, &status, 0)) != child) {
+        if (pid == -1) {
+            ERROR("auth screen scramber failed!\n");
+            return 1;
+        }
+    }
 	draw_scramber_surface();
 	return 0;
 }
