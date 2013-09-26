@@ -1,0 +1,14 @@
+Authenticator
+===========
+  Authenticator is userland program for board challenge.Now it only support maximum DS28E10 based challenge.
+
+Getting Started
+---------------
+  Authenticator running rely on android libraries listed below:
+	libcutils libutils libbinder libui libskia  libcrypto libsurfaceflinger_client
+  It will search w1 masters and slaves attched on each bus.
+  If matched slave devices (family 0x44 for DS28E10) it will start authentication process every 10s.
+  If 6 or times authenticae failed,it will do screen lock with a notification. And continue to do authentication process.
+  If authenticate pass later,it will unlock.
+  
+
