@@ -106,6 +106,7 @@ struct {
     unsigned int uid;
     unsigned int gid;
 } control_perms[] = {
+	 {"modem_", AID_RADIO,	AID_LOG},	 	 
     { "dumpstate",AID_SHELL, AID_LOG },
     { "ril-daemon",AID_RADIO, AID_RADIO },
     { "pppd_gprs", AID_RADIO, AID_RADIO },
@@ -268,7 +269,10 @@ static int check_control_perms(const char *name, unsigned int uid, unsigned int 
 
     /* Search the ACL */
     for (i = 0; control_perms[i].service; i++) {
-        if (strcmp(control_perms[i].service, name) == 0) {
+		//we should retrieve the service name by remove the args from request name
+        //if (strcmp(control_perms[i].service, name) == 0) {
+        if (strncmp(control_perms[i].service, name,
+			strlen(control_perms[i].service)) == 0) {
             if ((uid && control_perms[i].uid == uid) ||
                 (gid && control_perms[i].gid == gid)) {
                 return check_control_mac_perms(name, sctx);
