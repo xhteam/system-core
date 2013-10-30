@@ -8,9 +8,12 @@
 
 #define AUTHENTICATOR_VERSION	"v1.0.2"
 #define AUTHENTICATOR_FAMILY 0x44
-#define AUTHENTICATOR_START_DELAY 2 /*10s*/
-#define AUTHENTICATOR_INTERVAL	  10 /*10s*/
-#define AUTHENTICATOR_RETRY		  1 /*5*10s=60s within 60s no response,we will do screen lock*/
+//below time is s based
+#define AUTHENTICATOR_START_DELAY 2 
+#define AUTHENTICATOR_INTERVAL	  60 
+#define AUTHENTICATOR_RETRY		  5 
+
+
 
 
 #define INIT_STATE_INVALID 0
@@ -71,6 +74,13 @@ int search_masters(uint32_t ids[]) ;
 int search_slaves(uint32_t id,uint8_t family_to_search); 
 
 int set_master_autosearch(uint32_t id,bool enable);
+
+
+long simple_strtol(const char *cp,char **endp,unsigned int base);
+int ustrtoul(const char *cp, char **endp, unsigned int base);
+unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base);
+
+
 
 
 #endif

@@ -16,8 +16,23 @@
 #include "auth_log.h"
 
 //currently only for maxim chip ds28e10
-#define AUTH_ALGO_WRITE_CHALLEGE 0x0F
-#define AUTH_ALGO_READ_AUTH_PAGE 0xA5
+
+enum{
+    //common 
+    CMD_READ_ROM                = 0x33,
+    CMD_MATCH_ROM               = 0x55,
+    CMD_SEARCH_ROM              = 0xf0,
+    CMD_SKIP_ROM                = 0xcc,
+    
+    //ds28e10 chip private
+    CMD_WRITE_CHALLENGE         = 0x0f,
+    CMD_READ_AUTHENTICATED_PAGE = 0xa5,
+    CMD_ANONYMOUS_READ          = 0xcc,
+//    CMD_ANONYMOUS_WRITE         = 0x,
+    CMD_READ_MEMORY             = 0xf0,
+    CMD_WRITE_MEMORY            = 0x55,
+    CMD_WRITE_SECRET            = 0x5a,
+};
 
 
 struct auth_algorithm 
@@ -47,6 +62,62 @@ struct auth_algorithm
     
 };
 
+static unsigned short docrc16(auth_algorithm_t algo,unsigned short data);
+
+static int algo_write(auth_algorithm_t algo,uint8_t cmd,uint8_t* buf,int length){
+	algo->master_write(&cmd,1);
+    if(length>0)
+        algo->master_write(buf,length);
+    return 0;
+}
+
+//--------------------------------------------------------------------------
+//Issue a power-on reset sequence to DS28E10
+// Returns: TRUE (1) success
+//          FALSE (0) failed
+//
+static int  POR(auth_algorithm_t algo)
+{
+     short i,cnt=0;     
+     uint8_t* buf=algo->dev_buf;
+     
+     authenticator_reset_bus(0);
+	 
+     algo_write(algo,CMD_SKIP_ROM,0,0);
+     
+     cnt=0;
+  // construct a packet to send
+     buf[cnt++] = CMD_WRITE_MEMORY; // write memory command
+     buf[cnt++] = 0x00; // address LSB
+     buf[cnt++] = 0x00;      // address MSB
+// data to be written
+     for (i = 0; i < 4; i++) buf[cnt++] = 0xff;
+// perform the block writing     
+    algo->master_write(buf,cnt);
+// for reading crc bytes from DS28E10
+     algo->master_read(&buf[cnt++],1);
+     algo->master_read(&buf[cnt++],1);
+     
+     algo->crc16 = 0;
+     for (i = 0; i < cnt; i++)
+     {
+         docrc16(algo,buf[i]);
+     }
+     
+     if( algo->crc16 != 0xB001) //not 0 because that the calculating result is CRC16 and the reading result is inverted CRC16
+     {
+         ERROR("WriteMemory CRC failed\n"); 
+         return -1;
+     } 
+     usleep(100);
+     buf[0] = 0x00;
+     algo->master_write(buf,1);  // clock 0x00 byte as required
+     usleep(100);
+	 
+     authenticator_reset_bus(0);
+	 
+     return 0;
+}
 
 
 int auth_algo_init(auth_algorithm_t* algo)
@@ -61,6 +132,8 @@ int auth_algo_init(auth_algorithm_t* algo)
 		uint8_t secret_reachgood[8]={0xE7,0xFD,0xD8,0xF1,0x16,0xEE,0x10,0x34};
         //secret for lop project (G.W & Panasonic)
         uint8_t secret_gwp[8]={0x9c,0x3a,0x5b,0x92,0x66,0xf8,0x35,0x26};
+
+        uint8_t secret_xh[8]={0x91,0x07,0xCF,0xA7,0xD6,0xE3,0x5B,0x44};
         
         uint8_t* secret;
 
@@ -69,7 +142,7 @@ int auth_algo_init(auth_algorithm_t* algo)
         secret = secret_reachgood;
         secret = secret_gwp;
         
-        secret = secret_gwp;
+        secret = secret_xh;
             
 		if(algorithm)
 		{
@@ -89,7 +162,11 @@ int auth_algo_init(auth_algorithm_t* algo)
 		algorithm->slave_write = authenticator_slave_write;
 		algorithm->master_read = authenticator_master_read;
 		algorithm->master_write = authenticator_master_write;
-        
+
+		
+        //power on reset??? here
+        INFO("reset target\n");
+        POR(algorithm);
 		//TO BE added;
 		
 		return 0;
@@ -291,7 +368,7 @@ static int write_challenge(auth_algorithm_t algo,uint8_t *challenge,int length)
     //w1 netlink hacking
     algo->slave_write(buf,0);
     
-	buf[0] = AUTH_ALGO_WRITE_CHALLEGE;
+	buf[0] = CMD_WRITE_CHALLENGE;
 	algo->master_write(buf,1);
 
 	algo->master_write(challenge,length);
@@ -302,8 +379,8 @@ static int write_challenge(auth_algorithm_t algo,uint8_t *challenge,int length)
 		if(challenge[i]!=buf[i]) break;
 	}
 
-    //dump_data("challenge",challenge,length);
-    //dump_data("return challenge",buf,length);
+//    dump_data("challenge",challenge,length);
+//    dump_data("return challenge",buf,length);
     
 	if(i!=length)
 	{
@@ -339,7 +416,7 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
 	// write "read authenticated page" command with target address 0
     //
     cnt=0;
-    buf[cnt++]=AUTH_ALGO_READ_AUTH_PAGE;
+    buf[cnt++]=CMD_READ_AUTHENTICATED_PAGE;
 	buf[cnt++]=0;
 	buf[cnt++]=0;
 	for(i=0;i<cnt;i++) 
@@ -351,6 +428,7 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
 	for(i = 0;i < 31;i++)
 	{
 		algo->master_read(&buf[cnt++],1);
+		usleep(10000);
 	}
 
 	// run the CRC over this part
@@ -370,8 +448,8 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
     //calculate the corresponding MAC by the host, device secret reserved in SHAVM_MAC[]
     ComputeSHA1(algo,algo->SHAVM_MAC,(unsigned char *)&algo->romid,&buf[3],challenge);
 
-    // wait for 2 ms
-    usleep(5000);
+    // wait for 20 ms
+    usleep(20000);
 
     // read 20 bytes MAC and 2 bytes CRC
     cnt=0;
@@ -392,14 +470,16 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
         return -1; 
     } 
 
-    char printbuf[128];
-    sprintf(printbuf,"host MAC=");
-    for(i=0;i<20;i++)
-    {
-        sprintf(printbuf+strlen(printbuf),"%02x ",algo->SHAVM_MAC[i]);
-    }
-    sprintf(printbuf+strlen(printbuf),"\n");
-    VERBOSE(printbuf);
+	if(auth_log_level&AUTHLOG_VERBOSE){
+	    char printbuf[128];
+	    sprintf(printbuf,"host MAC=");
+	    for(i=0;i<20;i++)
+	    {
+	        sprintf(printbuf+strlen(printbuf),"%02x ",algo->SHAVM_MAC[i]);
+	    }
+	    sprintf(printbuf+strlen(printbuf),"\n");
+	    VERBOSE(printbuf);
+	}
 
     
     //Compare calculated MAC with the MAC from the DS28E10

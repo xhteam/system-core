@@ -134,11 +134,11 @@ int authenticator_init(struct authenticator** obj)
 
     //apply new loglevel if possible
     if (property_get("persist.auth.loglevel", value, NULL) > 0) {
-        auth_log_level = atoi(value);
+        auth_log_level = simple_strtoul(value,0,16);
     }
 
     ALWAYS("=================\n");
-    ALWAYS("authenticator %s \n",AUTHENTICATOR_VERSION);        
+    ALWAYS("authenticator %s [loglevel:0x%x]\n",AUTHENTICATOR_VERSION,auth_log_level);
     ALWAYS("=================\n");        
 
 	pmem = (uint8_t *)malloc(sizeof(struct authenticator)+sizeof(authenticator_core_t));
