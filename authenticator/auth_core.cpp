@@ -355,7 +355,7 @@ static void authenticationProcessCallback (void* param) {
 	struct authenticator* thiz = (struct authenticator*)param;		
 	struct authenticator_core* core = thiz->core;
     uint64_t romid;
-	const struct timeval timeval = {AUTHENTICATOR_INTERVAL,0};//10s
+	struct timeval timeval = {AUTHENTICATOR_INTERVAL,0};//10s
 	time_t tm;
     struct tm* timeinfo;
 	INFO("authentication start.\n");
@@ -367,7 +367,12 @@ static void authenticationProcessCallback (void* param) {
 	    core->retries++;
 		core->fail++;
         if(core->retries>=AUTHENTICATOR_RETRY){
-    	    if(AUTH_STATE_OKAY==AUTH_STATE(thiz)){   		    
+			if(core->pass&&(core->retries<AUTHENTICATOR_PASS_RETRY)){
+				//dynamically improve more retries?
+				timeval.tv_sec = timeval.tv_sec*2;
+				goto retry_once;				
+			}
+			if(AUTH_STATE_OKAY==AUTH_STATE(thiz)){   		    
                 AUTH_STATE(thiz) = AUTH_STATE_FAILED;
                 if(core->multi_lock){
                     requestTimedCallback(authentication_failure_cb,thiz,0);
@@ -389,6 +394,8 @@ static void authenticationProcessCallback (void* param) {
 		core->retries=0;
 		core->pass++;        
     }
+
+retry_once:	
 	INFO("\npass[%d]fail[%d]retry[%d]\n",core->pass,core->fail,core->retries);
 	
 
