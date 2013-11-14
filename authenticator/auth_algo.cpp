@@ -23,6 +23,11 @@ enum{
     CMD_MATCH_ROM               = 0x55,
     CMD_SEARCH_ROM              = 0xf0,
     CMD_SKIP_ROM                = 0xcc,
+    CMD_RESUME					= 0xa5,
+
+	//overdrive
+	CMD_OVERDRIVE_MATCH_ROM		= 0x69,
+	CMD_OVERDRIVE_SKIP_ROM		= 0x3c,
     
     //ds28e10 chip private
     CMD_WRITE_CHALLENGE         = 0x0f,
@@ -54,7 +59,7 @@ struct auth_algorithm
 	uint32_t challenge[3];
 
     uint64_t romid;
-
+	int  overdrive;
 	int  (*slave_write)(uint8_t *dat,int length);
 	int  (*slave_read)(uint8_t *dat,int length);
 	int  (*master_write)(uint8_t *dat,int length);
@@ -71,6 +76,41 @@ static int algo_write(auth_algorithm_t algo,uint8_t cmd,uint8_t* buf,int length)
     return 0;
 }
 
+static int write_int_to_file(const char* file,int v)
+{
+	int fd = open(file, O_WRONLY );
+	if( fd >= 0 ){
+		char buf[48];
+		int len;
+		len=sprintf(buf,"%d\n",v);
+		len = write( fd, buf, strlen(buf));
+		close(fd);
+		if( len > 0 ){
+			return 0;
+		}
+	}else {
+		ERROR("failed to open %s\n",file);
+	}
+
+	return -1;
+}
+
+static void  SwitchToOverdrive(auth_algorithm_t algo,int overdrive)
+{
+	//switch 1-wire standard mode to overdrive mode
+	 if(overdrive){	 	
+		write_int_to_file("/sys/module/wire/parameters/overdrive",0);
+		 authenticator_reset_bus(0);
+		 algo_write(algo,CMD_OVERDRIVE_SKIP_ROM,NULL,0);
+		 write_int_to_file("/sys/module/wire/parameters/overdrive",1);
+ 	}else {
+		 //update read/write timing of kernel master driver
+		 write_int_to_file("/sys/module/wire/parameters/overdrive",0);
+		 authenticator_reset_bus(0);
+ 		
+	}
+}
+
 //--------------------------------------------------------------------------
 //Issue a power-on reset sequence to DS28E10
 // Returns: TRUE (1) success
@@ -80,7 +120,9 @@ static int  POR(auth_algorithm_t algo)
 {
      short i,cnt=0;     
      uint8_t* buf=algo->dev_buf;
-     
+	 
+	 write_int_to_file("/sys/module/wire/parameters/overdrive",0);
+
      authenticator_reset_bus(0);
 	 
      algo_write(algo,CMD_SKIP_ROM,0,0);
@@ -92,10 +134,17 @@ static int  POR(auth_algorithm_t algo)
      buf[cnt++] = 0x00;      // address MSB
 // data to be written
      for (i = 0; i < 4; i++) buf[cnt++] = 0xff;
-// perform the block writing     
-    algo->master_write(buf,cnt);
+// perform the block writing     	
+	for(i=0;i<cnt;i++){
+		usleep(10000);
+	    algo->master_write(&buf[i],1);
+	}
 // for reading crc bytes from DS28E10
+	 
+	 usleep(10000);
      algo->master_read(&buf[cnt++],1);
+
+	 usleep(10000);
      algo->master_read(&buf[cnt++],1);
      
      algo->crc16 = 0;
@@ -109,10 +158,10 @@ static int  POR(auth_algorithm_t algo)
          ERROR("WriteMemory CRC failed\n"); 
          return -1;
      } 
-     usleep(100);
+     usleep(10000);
      buf[0] = 0x00;
      algo->master_write(buf,1);  // clock 0x00 byte as required
-     usleep(100);
+     usleep(10000);
 	 
      authenticator_reset_bus(0);
 	 
@@ -163,12 +212,14 @@ int auth_algo_init(auth_algorithm_t* algo)
 		algorithm->master_read = authenticator_master_read;
 		algorithm->master_write = authenticator_master_write;
 
-		
+
+		/*
         //power on reset??? here
         INFO("reset target\n");
         POR(algorithm);
+        	*/
 		//TO BE added;
-		
+
 		return 0;
 	}
 
@@ -365,26 +416,42 @@ static int write_challenge(auth_algorithm_t algo,uint8_t *challenge,int length)
 	if(length>16) return -1;
 	if(!algo||!algo->slave_write||!algo->master_read||!algo->master_write) return -2;
 
-    //w1 netlink hacking
-    algo->slave_write(buf,0);
+    //w1 netlink hacking to do w1_reset_select_slave
+    //algo->slave_write(buf,0);        
+    authenticator_reset_bus(0);
+	algo_write(algo,CMD_SKIP_ROM,NULL,0);
     
+	usleep(10000);
+	
 	buf[0] = CMD_WRITE_CHALLENGE;
 	algo->master_write(buf,1);
 
-	algo->master_write(challenge,length);
-
+	//write challenge bytes
 	for(i=0;i<length;i++) 
 	{
-		algo->master_read(&buf[i],1);
-		if(challenge[i]!=buf[i]) break;
+		usleep(1000);
+		algo->master_write(&challenge[i],1);
 	}
 
-//    dump_data("challenge",challenge,length);
-//    dump_data("return challenge",buf,length);
+	//read back challenge bytes
+	for(i=0;i<length;i++) 
+	{
+		usleep(1000);
+		algo->master_read(&buf[i],1);
+	}
+	
+	for(i=0;i<length;i++) 
+	{
+		if(challenge[i]!=buf[i]) 
+			break;
+	}
+
     
 	if(i!=length)
 	{
-		ERROR("challege failed\n");
+		ERROR("write challenge failed\n");
+		dump_data("challenge",challenge,length);
+		dump_data("return challenge",buf,length);
 		return -3;
 	}
     
@@ -411,7 +478,9 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
     ComputeSHA1(algo,secret,(uint8_t*)&algo->romid,NULL,NULL);
 
     //w1 netlink hacking to do w1_reset_select_slave
-    algo->slave_write(buf,0);
+    //algo->slave_write(buf,0);    
+    authenticator_reset_bus(0);
+	algo_write(algo,CMD_SKIP_ROM,NULL,0);
     
 	// write "read authenticated page" command with target address 0
     //
@@ -420,15 +489,16 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
 	buf[cnt++]=0;
 	buf[cnt++]=0;
 	for(i=0;i<cnt;i++) 
-	{
+	{	
+		usleep(1000);
 		algo->master_write(&buf[i],1);
 	}
 
 	// read 28 bytes data + "FF" + 2 bytes CRC
 	for(i = 0;i < 31;i++)
-	{
+	{	
+		usleep(1000);
 		algo->master_read(&buf[cnt++],1);
-		usleep(10000);
 	}
 
 	// run the CRC over this part
@@ -440,7 +510,8 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
 	if( algo->crc16 != 0xB001) //not 0 because that the calculating result is CRC16 and the reading result is inverted CRC16
 	{
 		memset(algo->SHAVM_MAC,0,20);
-		ERROR("read page data failed\n"); 
+		ERROR("read page data failed(crc failure) crc16[0x%02x]\n",algo->crc16); 
+		dump_data("page data",buf,cnt);
 		return -1; 
 	} 
 
@@ -455,6 +526,7 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
     cnt=0;
     for(i = 0;i < 22;i++)
     {
+	    usleep(1000);
         algo->master_read(&buf[cnt++],1);
     }
     
@@ -466,7 +538,8 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
     }
     if( algo->crc16 != 0xB001) //not 0 because that the calculating result is CRC16 and the reading result is inverted CRC16
     {
-		ERROR("read MAC failed\n"); 
+		ERROR("read mac failed(crc failure) crc16[0x%02x]\n",algo->crc16); 		
+		dump_data("mac data",buf,cnt);
         return -1; 
     } 
 
@@ -493,7 +566,9 @@ static int read_authenticated_page(auth_algorithm_t algo,uint8_t * challenge)
         ERROR("authentication FAILURE\n");
         return -1; 
     }
-    INFO("authentication PASS\n");
+    INFO("\n\n");	
+    INFO("!!!PASS!!!");
+    INFO("\n\n");	
 
     return 0;
 }
@@ -512,6 +587,16 @@ int auth_algo_challenge(auth_algorithm_t algo,uint64_t romid)
 	{
         return -1;
 	}
+	
+	algo->overdrive=0;
+	property_get("persist.auth.overdrive", value, "true");
+	if(!strcmp(value,"true"))
+	{
+		algo->overdrive=1;
+	}
+	if(algo->overdrive){			
+		SwitchToOverdrive(algo,algo->overdrive);
+	}
     
 
 	if(algo)
@@ -524,7 +609,7 @@ int auth_algo_challenge(auth_algorithm_t algo,uint64_t romid)
         algo->romid = romid;
 
         //reset bus
-        if(authenticator_reset_bus(0)<0) goto exit;
+        //if(authenticator_reset_bus(0)<0) goto exit;
         //write challenge
 		if(write_challenge(algo,challenges,12)<0) goto exit;
         //check chanllenge

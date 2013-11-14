@@ -48,6 +48,9 @@ struct authenticator_core
     bool multi_lock;
     int  retries;
 
+	//statistics
+	int fail;
+	int pass;
 	//
 	//UserCallbackInfo *last_wake_timeout_info;
 };
@@ -362,6 +365,7 @@ static void authenticationProcessCallback (void* param) {
 	if(auth_algo_challenge(core->algo,romid)<0)
 	{
 	    core->retries++;
+		core->fail++;
         if(core->retries>=AUTHENTICATOR_RETRY){
     	    if(AUTH_STATE_OKAY==AUTH_STATE(thiz)){   		    
                 AUTH_STATE(thiz) = AUTH_STATE_FAILED;
@@ -380,11 +384,13 @@ static void authenticationProcessCallback (void* param) {
 		{   
 		    if(false==core->multi_lock)
 		        auth_screen_unlock();
-            AUTH_STATE(thiz) = AUTH_STATE_OKAY;
-            core->retries=0;
+            AUTH_STATE(thiz) = AUTH_STATE_OKAY;            
         }
-        
+		core->retries=0;
+		core->pass++;        
     }
+	INFO("\npass[%d]fail[%d]retry[%d]\n",core->pass,core->fail,core->retries);
+	
 
 	time(&tm);
     timeinfo = localtime ( &tm );

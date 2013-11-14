@@ -113,11 +113,28 @@ int search_slaves(uint32_t id,uint8_t family_to_search)
 
 int set_master_autosearch(uint32_t id,bool enable)
 {
+	int ret=0;
 	const char *dirname = "/sys/bus/w1/devices";
     char filename[256];
     sprintf(filename,"%s/w1_bus_master%d/w1_master_search",dirname,id);
     //per w1 spec,-1 is search infinite, a small positive integar to disable auto search
-    return write_int_file(filename,(true==enable)?-1:1);    
+    ret =  write_int_file(filename,(true==enable)?-1:1);    
+
+	if(ret){
+		sprintf(filename,"%s/w1_bus_master/w1_master_search",dirname);
+		//per w1 spec,-1 is search infinite, a small positive integar to disable auto search
+		ret =  write_int_file(filename,(true==enable)?-1:1);		
+	}	
+	if(ret){
+		sprintf(filename,"%s/w1 bus master/w1_master_search",dirname);
+		//per w1 spec,-1 is search infinite, a small positive integar to disable auto search
+		ret =  write_int_file(filename,(true==enable)?-1:1);		
+	}
+
+	if(ret){
+		ERROR("failed to disable bus %d autosearch\n",id);
+	}
+	return ret;
 }
 
 

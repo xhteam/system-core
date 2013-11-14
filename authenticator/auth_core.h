@@ -6,11 +6,11 @@
 #include "auth_log.h"
 #include "auth_proto.h"
 
-#define AUTHENTICATOR_VERSION	"v1.0.2"
+#define AUTHENTICATOR_VERSION	"v1.0.3"
 #define AUTHENTICATOR_FAMILY 0x44
 //below time is s based
 #define AUTHENTICATOR_START_DELAY 2 
-#define AUTHENTICATOR_INTERVAL	  60 
+#define AUTHENTICATOR_INTERVAL	  30 
 #define AUTHENTICATOR_RETRY		  5 
 
 

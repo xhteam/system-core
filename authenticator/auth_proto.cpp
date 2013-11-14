@@ -446,7 +446,6 @@ int auth_proto_slave_read(int s,struct w1_reg_num* rn,uint8_t* dat,int length)
 						{
 						    //read opertation should be calculated from msg length
 						    int data_len = m->len-sizeof(struct w1_netlink_cmd);
-                            VERBOSE("read return length=%d\n",data_len);
 							if((ret+data_len)<=length)
 							{
 								memcpy(dat+ret,cmd->data,cmd->len);
@@ -466,7 +465,6 @@ int auth_proto_slave_read(int s,struct w1_reg_num* rn,uint8_t* dat,int length)
 	}
 
 exit:
-    VERBOSE("slave read %d bytes\n",ret);
 	return ret; 	
 	
 }
@@ -522,7 +520,6 @@ int auth_proto_slave_write(int s,struct w1_reg_num* rn,uint8_t* dat,int length)
 	}
 
 exit:
-    VERBOSE("slave write %d bytes\n",ret);    
 	return ret; 	
 }
 
@@ -579,7 +576,6 @@ int auth_proto_master_write(int s,uint32_t id,uint8_t* dat,int length)
 	}
 
 exit:
-    VERBOSE("master write %d bytes\n",ret);    
 	return ret; 	    
 }
 //
@@ -616,7 +612,6 @@ int auth_proto_master_read(int s,uint32_t id,uint8_t* dat,int length)
 						{
 						    //read opertation should be calculated from msg length
 						    int data_len = m->len-sizeof(struct w1_netlink_cmd);
-                            VERBOSE("read return length=%d\n",data_len);
 							if((ret+data_len)<=length)
 							{
 								memcpy(dat+ret,cmd->data,cmd->len);
@@ -636,7 +631,6 @@ int auth_proto_master_read(int s,uint32_t id,uint8_t* dat,int length)
 	}
 
 exit:
-    VERBOSE("master read %d bytes\n",ret);
 	return ret; 	    
 }
 
