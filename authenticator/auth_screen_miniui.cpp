@@ -268,7 +268,7 @@ static int draw_scramber_surface(void){
     fread(&max_brightness, 1, 3, file);
     fclose(file);
 
-	atoi((char *) &max_brightness);
+	max_brightness = atoi((char *) &max_brightness);
 
 	brightness = max_brightness/2;
 	
