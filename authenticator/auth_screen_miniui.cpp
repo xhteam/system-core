@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -245,6 +246,39 @@ static int draw_scramber_surface(void){
     clear_screen();
 	draw_surface_centered(scramber,surface);
     gr_flip();
+
+	//turn on backlight	
+	char value[PROPERTY_VALUE_MAX];
+	char path[256],max_path[256];
+	int brightness,max_brightness;
+	FILE* file;
+	property_get("hw.backlight.dev", value, "pwm-backlight");
+    strcpy(path, "/sys/class/backlight/");
+	strcat(path, value);	
+	strcpy(max_path, path);
+	strcat(max_path, "/max_brightness");
+	strcat(path, "/brightness");
+
+	
+    file = fopen(max_path, "r");
+    if (!file) {
+        ERROR("can not open file %s\n", max_path);
+        return -1;;
+    }
+    fread(&max_brightness, 1, 3, file);
+    fclose(file);
+
+	atoi((char *) &max_brightness);
+
+	brightness = max_brightness/2;
+	
+    file = fopen(path, "w");
+    if (!file) {
+        ERROR("can not open file %s\n", path);
+        return -2;
+    }
+    fprintf(file, "%d", brightness);
+    fclose(file);
 	
 	res_free_surface(surface);
 	gr_exit();
