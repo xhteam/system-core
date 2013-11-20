@@ -589,7 +589,7 @@ int auth_algo_challenge(auth_algorithm_t algo,uint64_t romid)
 	}
 	
 	algo->overdrive=0;
-	property_get("persist.auth.overdrive", value, "true");
+	property_get("persist.auth.overdrive", value, "false");
 	if(!strcmp(value,"true"))
 	{
 		algo->overdrive=1;
