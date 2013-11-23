@@ -23,6 +23,11 @@
 
 using namespace android;
 
+struct cpu_info {
+    long unsigned utime, ntime, stime, itime;
+    long unsigned iowtime, irqtime, sirqtime;
+};
+
 
 typedef struct UserCallbackInfo {
     TimedCallback p_callback;
@@ -53,6 +58,8 @@ struct authenticator_core
 	int pass;
 	//
 	//UserCallbackInfo *last_wake_timeout_info;
+	struct cpu_info old_cpu;
+	struct cpu_info new_cpu;
 };
 
 
@@ -80,9 +87,7 @@ struct authenticator{
 uint32_t auth_log_level = AUTHLOG_ERROR|AUTHLOG_DEBUG;
 static struct authenticator* global_authenticator=0;
 static FILE* def_out = stdout;
-
-
-static int need_exit;
+static int cpu_stat_threshold=2;
 
 int __log_print(const char *fmt, ...)
 {
@@ -105,7 +110,38 @@ int __log_print(const char *fmt, ...)
 	return ret;
 }
 
+static int get_cpustat(struct cpu_info* cpuinfo){
+	FILE *file;
+	file = fopen("/proc/stat", "r");
+	if (!file) return -1;
+	fscanf(file, "cpu  %lu %lu %lu %lu %lu %lu %lu", &cpuinfo->utime, &cpuinfo->ntime, &cpuinfo->stime,
+			&cpuinfo->itime, &cpuinfo->iowtime, &cpuinfo->irqtime, &cpuinfo->sirqtime);
+	fclose(file);
+	return 0;
+}
 
+static int get_cpu_utilization(struct authenticator* obj){	
+    long unsigned total_delta_time;
+	struct cpu_info* oldinfo = &obj->core->old_cpu;
+	struct cpu_info* newinfo = &obj->core->new_cpu;
+	int total,user,system,iow,irq;
+
+	total=user=system=iow=irq=0;
+    total_delta_time = (newinfo->utime + newinfo->ntime + newinfo->stime + newinfo->itime
+                        + newinfo->iowtime + newinfo->irqtime + newinfo->sirqtime)
+                     - (oldinfo->utime + oldinfo->ntime + oldinfo->stime + oldinfo->itime
+                        + oldinfo->iowtime + oldinfo->irqtime + oldinfo->sirqtime);
+
+	if(total_delta_time){
+		user = ((newinfo->utime + newinfo->ntime) - (oldinfo->utime + oldinfo->ntime)) * 100  / total_delta_time;
+		system = ((newinfo->stime ) - (oldinfo->stime)) * 100 / total_delta_time;
+		iow = ((newinfo->iowtime) - (oldinfo->iowtime)) * 100 / total_delta_time;
+		irq = ((newinfo->irqtime + newinfo->sirqtime)- (oldinfo->irqtime + oldinfo->sirqtime)) * 100 / total_delta_time;
+	}
+	total = user+system+iow+irq;
+
+	return total;
+}
 
 int authenticator_init(struct authenticator** obj)
 {
@@ -140,8 +176,14 @@ int authenticator_init(struct authenticator** obj)
         auth_log_level = simple_strtoul(value,0,16);
     }
 
+	
+    if (property_get("persist.auth.cpustat", value, "0x2") > 0) {
+        cpu_stat_threshold = simple_strtoul(value,0,16);
+    }
+
     ALWAYS("=================\n");
-    ALWAYS("authenticator %s [loglevel:0x%x]\n",AUTHENTICATOR_VERSION,auth_log_level);
+    ALWAYS("authenticator %s [loglevel:0x%x][cpu threshold:%d]\n",AUTHENTICATOR_VERSION,auth_log_level,
+		cpu_stat_threshold);
     ALWAYS("=================\n");        
 
 	pmem = (uint8_t *)malloc(sizeof(struct authenticator)+sizeof(authenticator_core_t));
@@ -351,6 +393,19 @@ static void authentication_failure_cb (void* param) {
     }
     
 }
+
+static void CpuUtilizationCallback (void* param) {
+	struct authenticator* thiz = (struct authenticator*)param;		
+	struct authenticator_core* core = thiz->core;	
+	struct timeval timeval = {AUTHENTICATOR_CPUSTAT_INTERVAL,0};
+
+	memcpy(&core->old_cpu,&core->new_cpu,sizeof(core->new_cpu));
+	get_cpustat(&core->new_cpu);
+	int cpu_utilization = get_cpu_utilization(thiz);
+	INFO("cpustat:%ld%%\n",cpu_utilization);
+	
+	requestTimedCallback(CpuUtilizationCallback,thiz,&timeval);	
+}
 static void authenticationProcessCallback (void* param) {
 	struct authenticator* thiz = (struct authenticator*)param;		
 	struct authenticator_core* core = thiz->core;
@@ -358,46 +413,52 @@ static void authenticationProcessCallback (void* param) {
 	struct timeval timeval = {AUTHENTICATOR_INTERVAL,0};//10s
 	time_t tm;
     struct tm* timeinfo;
-	INFO("authentication start.\n");
-    
-	memcpy(&romid,&thiz->rn,sizeof(thiz->rn));
-	romid=__cpu_to_le64(romid);
-	if(auth_algo_challenge(core->algo,romid)<0)
-	{
-	    core->retries++;
-		core->fail++;
-        if(core->retries>=AUTHENTICATOR_RETRY){
-			if(core->pass&&(core->retries<AUTHENTICATOR_PASS_RETRY)){
-				//dynamically improve more retries?
-				timeval.tv_sec = timeval.tv_sec*2;
-				goto retry_once;				
-			}
-			if(AUTH_STATE_OKAY==AUTH_STATE(thiz)){   		    
-                AUTH_STATE(thiz) = AUTH_STATE_FAILED;
-                if(core->multi_lock){
-                    requestTimedCallback(authentication_failure_cb,thiz,0);
-                }else {
-                    auth_screen_lock(NULL);
-                    AUTH_STATE(thiz) = AUTH_STATE_LOCKED;
-                }
-            }
-        }
-	}
-    else
-    {
-	    if(AUTH_STATE_OKAY!=AUTH_STATE(thiz))
-		{   
-		    if(false==core->multi_lock)
-		        auth_screen_unlock();
-            AUTH_STATE(thiz) = AUTH_STATE_OKAY;            
-        }
-		core->retries=0;
-		core->pass++;        
-    }
+	memcpy(&core->old_cpu,&core->new_cpu,sizeof(core->new_cpu));
+	get_cpustat(&core->new_cpu);
 
-retry_once:	
-	INFO("\npass[%d]fail[%d]retry[%d]\n",core->pass,core->fail,core->retries);
+	int cpu_utilization = get_cpu_utilization(thiz);
+	INFO("cpustat:%ld%%\n",cpu_utilization);
+	if(!core->pass||(cpu_utilization<cpu_stat_threshold/*very idle to run*/)){
+		INFO("authentication start.\n");
+		memcpy(&romid,&thiz->rn,sizeof(thiz->rn));
+		romid=__cpu_to_le64(romid);
+		if(auth_algo_challenge(core->algo,romid)<0)
+		{
+		    core->retries++;
+			core->fail++;
+	        if(core->retries>=AUTHENTICATOR_RETRY){
+				if(core->pass&&(core->retries<AUTHENTICATOR_PASS_RETRY)){
+					//dynamically improve more retries?
+					timeval.tv_sec = timeval.tv_sec*2;
+					goto retry_once;				
+				}
+				if(AUTH_STATE_OKAY==AUTH_STATE(thiz)){   		    
+	                AUTH_STATE(thiz) = AUTH_STATE_FAILED;
+	                if(core->multi_lock){
+	                    requestTimedCallback(authentication_failure_cb,thiz,0);
+	                }else {
+	                    auth_screen_lock(NULL);
+	                    AUTH_STATE(thiz) = AUTH_STATE_LOCKED;
+	                }
+	            }
+	        }
+		}
+	    else
+	    {
+		    if(AUTH_STATE_OKAY!=AUTH_STATE(thiz))
+			{   
+			    if(false==core->multi_lock)
+			        auth_screen_unlock();
+	            AUTH_STATE(thiz) = AUTH_STATE_OKAY;            
+	        }
+			core->retries=0;
+			core->pass++;        
+	    }
+
+	retry_once:	
+		INFO("\npass[%d]fail[%d]retry[%d]\n",core->pass,core->fail,core->retries);
 	
+	}
 
 	time(&tm);
     timeinfo = localtime ( &tm );
@@ -519,7 +580,8 @@ int authenticator_start(struct authenticator* thiz)
 	#endif
 	
 	authenticator_core_t* core = thiz->core;
-	const struct timeval timeval = {AUTHENTICATOR_START_DELAY,0};//10s
+	const struct timeval timeval = {AUTHENTICATOR_START_DELAY,0};//10s	
+	const struct timeval timeval_cpustat = {0,0};//10s
     int ret;
     pthread_attr_t attr;
 
@@ -549,6 +611,9 @@ int authenticator_start(struct authenticator* thiz)
     #ifdef MULTI_LOCK_SUPPORT
     core->multi_lock = true;
     #endif
+
+	get_cpustat(&thiz->core->new_cpu);
+	requestTimedCallback(CpuUtilizationCallback,thiz,&timeval_cpustat);
 		
 	requestTimedCallback(authenticationProcessCallback,thiz,&timeval);
 
