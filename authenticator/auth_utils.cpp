@@ -21,6 +21,7 @@ static int read_int_file( const char* file, int* pResult )
         if( rlt > 0 ){
             buf[rlt] = '\0';
             *pResult = atoi(buf);
+			close(fd);
             return 0;
         }
     }
@@ -35,6 +36,7 @@ static int write_int_file( const char* file, int value )
         sprintf(buf,"%d\n",value);
         int rlt = write( fd, buf, sizeof(buf) );
         if( rlt > 0 ){
+			close(fd);
             return 0;
         }
     }
