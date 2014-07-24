@@ -69,6 +69,7 @@ struct {
     { "net.qmi",          AID_RADIO,    0 },
     { "net.lte",          AID_RADIO,    0 },
     { "net.cdma",         AID_RADIO,    0 },
+    { "net.",             AID_RADIO,    0 },
     { "ril.",             AID_RADIO,    0 },
     { "gsm.",             AID_RADIO,    0 },
     { "persist.radio",    AID_RADIO,    0 },
